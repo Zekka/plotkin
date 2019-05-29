@@ -1,0 +1,242 @@
+use crate::world as world;
+use std::marker::PhantomData;
+
+pub struct Type {
+% for ref, metadata in entities.items()
+    pub {{ ref.element }}: {{ metadata.module_name }}::Type,
+% endfor
+}
+
+impl Type {
+    pub fn init() -> Type {
+        Type {
+% for ref, metadata in entities.items()
+            {{ ref.element }}: {{ metadata.module_name }}::Type::init(),
+% endfor
+        }
+    }
+
+% for kind, metadata in kinds.items()
+    pub fn ref_{{ kind.element }}(&self, h: impl Castable<H<{{ metadata.module_name }}::Type>>) -> &{{ metadata.module_name }}::Type {
+        return match h.cast().1 {
+% for name, how in assignable_entities[kind].items()
+% set metadata = entities[name]
+            {{ metadata.id }} => &self.{{ name.element }}{{ how }},
+% endfor
+            _ => unreachable!(),
+        }
+    }
+    pub fn mut_{{ kind.element }}(&mut self, h: impl Castable<H<{{ metadata.module_name }}::Type>>) -> &mut {{ metadata.module_name }}::Type {
+        return match h.cast().1 {
+% for name, how in assignable_entities[kind].items()
+% set metadata = entities[name]
+            {{ metadata.id }} => &mut self.{{ name.element }}{{ how }},
+% endfor
+            _ => unreachable!(),
+        }
+    }
+    pub fn try_ref_{{ kind.element }}(&self, h: impl Checkable<H<{{ metadata.module_name }}::Type>>) -> Option<&{{ metadata.module_name }}::Type> {
+        return match h.check() {
+% for name, how in assignable_entities[kind].items()
+% set metadata = entities[name]
+            Some(H(_, {{ metadata.id }})) => Some(&self.{{ name.element }}{{ how }}),
+% endfor
+            _ => None,
+        }
+    }
+    pub fn try_mut_{{ kind.element }}(&mut self, h: impl Checkable<H<{{ metadata.module_name }}::Type>>) -> Option<&mut {{ metadata.module_name }}::Type> {
+        return match h.check() {
+% for name, how in assignable_entities[kind].items()
+% set metadata = entities[name]
+            Some(H(_, {{ metadata.id }})) => Some(&mut self.{{ name.element }}{{ how }}),
+% endfor
+            _ => None,
+        }
+    }
+% endfor
+}
+
+pub trait Kind: Sized {
+    fn load(ix: usize) -> Option<Self>;
+    fn unload(&self) -> usize;
+}
+
+pub trait Castable<To>: Checkable<To> {
+    fn cast(&self) -> To;
+}
+
+pub trait Checkable<To>: Kind {
+    fn check(&self) -> Option<To>;
+
+    fn matches(&self) -> bool {
+        match self.check() {
+            Some(_) => true,
+            _ => false,
+        }
+    }
+}
+
+% for kind, metadata in kinds.items()
+impl Kind for H<{{ metadata.module_name }}::Type> {
+    fn load(ix: usize) -> Option<H<{{ metadata.module_name }}::Type>> {
+        return match ix {
+% for name in assignable_entities[kind]
+% set metadata = entities[name]
+            {{ metadata.id }} => Some(H(PhantomData, {{ metadata.id }})),
+% endfor
+            _ => None,
+        }
+    }
+
+    fn unload(&self) -> usize {
+        self.1
+    }
+}
+% endfor
+
+% for kind, metadata in kinds.items()
+% set elist = assignable_entities[kind]
+pub const EVERY_{{ kind.element|upper() }}: [H<{{ metadata.module_name }}::Type>; {{ elist|length() }}] = [
+% for name in elist
+    H(PhantomData, {{ entities[name].id }}),
+% endfor
+];
+% endfor
+
+pub struct H<T>(pub PhantomData<*const T>, pub usize);
+
+impl<T> Copy for H<T> {}
+impl<T> Clone for H<T> {
+    fn clone(&self) -> H<T> { *self }
+}
+
+pub struct E<T>(pub PhantomData<*const T>);
+
+impl<T> Copy for E<T> {}
+impl<T> Clone for E<T> {
+    fn clone(&self) -> E<T> { *self }
+}
+
+
+% for kind, metadata in kinds.items()
+impl Castable<H<{{ metadata.module_name }}::Type>>
+for H<{{ metadata.module_name }}::Type> {
+    fn cast(&self) -> H<{{ metadata.module_name }}::Type> {
+        *self
+    }
+}
+impl Checkable<H<{{ metadata.module_name }}::Type>>
+for H<{{ metadata.module_name }}::Type> {
+    fn check(&self) -> Option<H<{{ metadata.module_name }}::Type>> {
+        Some(*self)
+    }
+}
+% endfor
+
+% for src_kind, src_metadata in kinds.items()
+% for dest_kind, dest_metadata in kinds.items()
+
+% if src_kind != dest_kind and (src_kind, dest_kind) in assignable
+impl Castable<H<{{ dest_metadata.module_name }}::Type>>
+for H<{{ src_metadata.module_name }}::Type> {
+    fn cast(&self) -> H<{{ dest_metadata.module_name }}::Type> {
+        H::<{{ dest_metadata.module_name}}::Type>::load(self.1).unwrap()
+    }
+}
+% endif
+
+% if src_kind != dest_kind and ((dest_kind, src_kind) in assignable or (src_kind, dest_kind) in assignable)
+impl Checkable<H<{{ dest_metadata.module_name }}::Type>>
+for H<{{ src_metadata.module_name }}::Type> {
+    fn check(&self) -> Option<H<{{ dest_metadata.module_name }}::Type>> {
+        H::<{{ dest_metadata.module_name }}::Type>::load(self.1)
+    }
+}
+% endif
+
+% endfor
+% endfor
+
+% for name, metadata in entities.items()
+impl Kind for E<{{ metadata.module_name }}::Type> {
+    fn load(ix: usize) -> Option<E<{{ metadata.module_name }}::Type>> {
+        return match ix {
+            {{ metadata.id }} => Some(E(PhantomData)),
+            _ => None,
+        }
+    }
+
+    fn unload(&self) -> usize {
+        {{ metadata.id }}
+    }
+}
+% endfor
+
+% for name, metadata in entities.items()
+impl Castable<E<{{ metadata.module_name }}::Type>>
+for E<{{ metadata.module_name }}::Type> {
+    fn cast(&self) -> E<{{ metadata.module_name }}::Type> {
+        *self
+    }
+}
+
+impl Checkable<E<{{ metadata.module_name }}::Type>>
+for E<{{ metadata.module_name }}::Type> {
+    fn check(&self) -> Option<E<{{ metadata.module_name }}::Type>> {
+        Some(*self)
+    }
+}
+% endfor
+
+% for kind, kind_metadata in kinds.items()
+
+% for name in assignable_entities[kind]
+% set ent_metadata = entities[name]
+impl Checkable<H<{{ kind_metadata.module_name }}::Type>>
+for E<{{ ent_metadata.module_name }}::Type> {
+    fn check(&self) -> Option<H<{{ kind_metadata.module_name }}::Type>> {
+        Some(H(PhantomData, {{ ent_metadata.id }}))
+    }
+}
+
+impl Castable<H<{{ kind_metadata.module_name }}::Type>>
+for E<{{ ent_metadata.module_name }}::Type> {
+    fn cast(&self) -> H<{{ kind_metadata.module_name }}::Type> {
+        H(PhantomData, {{ ent_metadata.id }})
+    }
+}
+
+impl Checkable<E<{{ ent_metadata.module_name }}::Type>>
+for H<{{ kind_metadata.module_name }}::Type> {
+    fn check(&self) -> Option<E<{{ ent_metadata.module_name }}::Type>> {
+        E::<{{ ent_metadata.module_name }}::Type>::load(self.1)
+    }
+}
+
+% endfor
+% endfor
+
+pub trait HasDebugName {
+    fn debug_name() -> &'static str;
+}
+
+impl<T: HasDebugName> std::fmt::Debug for H<T> {
+    fn fmt(&self, f: &mut std::fmt::Formatter) -> std::fmt::Result {
+        write!(f, "{}@{}", T::debug_name(), ix_to_str(self.1))
+    }
+}
+
+impl<T: HasDebugName> std::fmt::Debug for E<T> where E<T>: Kind {
+    fn fmt(&self, f: &mut std::fmt::Formatter) -> std::fmt::Result {
+        write!(f, "E@{}", ix_to_str(self.unload()))
+    }
+}
+
+fn ix_to_str(ix: usize) -> &'static str {
+    match ix {
+% for name, metadata in entities.items()
+        {{ metadata.id }} => "{{ name.element }}",
+% endfor
+        _ => "invalid",
+    }
+}

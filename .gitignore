@@ -1,0 +1,4 @@
+sampleproject/
+venv/
+**/__pycache__/
+.idea/

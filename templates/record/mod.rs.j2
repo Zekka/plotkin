@@ -1,0 +1,8 @@
+pub mod common;
+
+pub use common::Type as Type;
+% if this.is_kind
+pub use common::Args as Args;
+% endif
+
+{{ "etc"|scrap }}

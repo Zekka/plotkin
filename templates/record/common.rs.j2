@@ -1,0 +1,71 @@
+use crate::world as world;
+use crate::world::directory::{E, HasDebugName};
+
+#[derive(Debug)]
+pub struct Type {
+% if super
+    pub {{ super.ref.element }}: {{ super.module_name }}::Type,
+% endif
+% for fieldname, field in this.unique_fields.items()
+    pub {{ fieldname }}: {{ field.type }},
+% endfor
+}
+
+% if this.is_kind
+pub struct Args {
+% for argname, field in this.uninitialized_fields.items()
+    pub {{ argname }}: {{ field.type }},
+% endfor
+}
+% endif
+
+% if not this.is_kind
+pub const ID: E<Type> = E(std::marker::PhantomData);
+% endif
+
+impl Type {
+    pub fn init({% if this.is_kind %} args: Args {% endif %}) -> Type {
+        let mut t = Type {
+% if super
+            {{ super.ref.element }}: {{ super.module_name }}::Type::init(
+                {{ super.module_name }}::Args {
+% for argname, lit in this.initializers_for_super.items()
+                    {{ argname }}: {{ lit }},
+% endfor
+% for argname, lit in this.propagate_for_super.items()
+                    {{ argname }}: args.{{ lit }},
+% endfor
+                }
+            ),
+% endif
+% for fieldname, lit in this.initializers_for_this_lit.items()
+            {{ fieldname }}: {{ lit }},
+% endfor
+% for fieldname, lit in this.propagate_for_this_lit.items()
+            {{ fieldname }}: args.{{ lit }},
+% endfor
+        };
+
+% for fieldname, lit in this.initializers_for_init.items()
+        panic!("TODO: Initializers for init")
+% endfor
+
+        return t;
+    }
+
+% if not this.is_kind
+    pub fn me(&self) -> E<Type> {
+        ID
+    }
+% endif
+}
+
+impl HasDebugName for Type {
+    fn debug_name() -> &'static str {
+% if this.is_kind
+        return "{{ this.ref.element }}";
+% else
+        return "noumenal";
+% endif
+    }
+}
