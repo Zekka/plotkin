@@ -44,7 +44,6 @@ def extract_scraps(content):
         if end_scrap and " " in end_scrap:
             end_scrap = None
 
-        print("extract_scraps: %s" % ((line, in_scrap, start_scrap, end_scrap),))
         if start_scrap is None and START_SCRAP in line:
             raise ValueError(
                 "looks like a failed attempt to start a scrap: must be whole line"

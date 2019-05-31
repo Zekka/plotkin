@@ -1,0 +1,30 @@
+use crate::world as world;
+use super::super::types::{Action, Instead, Before, Perform, After, Cancellation, Outcome};
+
+% for rule in chapter.rules.instead
+pub fn {{ rule.procedure }}(world: &world::directory::Type, action: &Action) -> Instead {
+    use Instead::*;
+{{ rule.procedure|scrap(1) }}
+}
+% endfor
+
+% for rule in chapter.rules.before
+pub fn {{ rule.procedure }}(world: &world::directory::Type, action: &Action) -> Before {
+    use Before::*;
+{{ rule.procedure|scrap(1) }}
+}
+% endfor
+
+% for rule in chapter.rules.perform
+pub fn {{ rule.procedure }}(world: &mut world::directory::Type, action: &Action) -> Perform {
+    use Perform::*;
+{{ rule.procedure|scrap(1) }}
+}
+% endfor
+
+% for rule in chapter.rules.after
+pub fn {{ rule.procedure }}(world: &world::directory::Type, action: &Action, outcome: &Outcome) -> After {
+    use After::*;
+{{ rule.procedure|scrap(1) }}
+}
+% endfor

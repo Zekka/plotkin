@@ -1,0 +1,59 @@
+use crate::world as world;
+use super::chapters as chapters;
+use super::types::{Action, Instead, Before, Perform, After, Outcome, Cancellation};
+
+impl world::directory::Type {
+    pub fn handle_{{ rulebook.ref.element }}(&mut self, mut action: Action) -> Result<Outcome, Cancellation> {
+        // all insteads
+        loop {
+% for rule in rulebook.rules.instead
+            match chapters::{{ rule.chapter }}::{{ rule.procedure }}(self, &action) {
+                Instead::Next() => {}
+                Instead::Stop(outcome) => { return Ok(outcome); }
+                Instead::Do(x) => {
+                    action = x;
+                    continue;
+                }
+            }
+% endfor
+            break;
+        };
+
+        // all befores
+% for rule in rulebook.rules.before
+        match chapters::{{ rule.chapter }}::{{ rule.procedure }}(self, &action) {
+            Before::Next() => {}
+            Before::Do(x) => {
+                self.handle_{{ rulebook.ref.element }}(x)?;
+            }
+        };
+% endfor
+
+        // all performs
+        let result = loop {
+% for rule in rulebook.rules.perform
+            match chapters::{{ rule.chapter }}::{{ rule.procedure }}(self, &action) {
+                Perform::Next() => {}
+                Perform::Cancel(c) => { return Err(c); }
+                Perform::Completed(x) => {
+                    break x;
+                }
+            };
+% endfor
+            unreachable!();
+        };
+
+        // all afters
+% for rule in rulebook.rules.after
+        match chapters::{{ rule.chapter }}::{{ rule.procedure }}(self, &action, &result) {
+            After::Next() => {}
+            After::Do(x) => {
+                self.handle_{{ rulebook.ref.element }}(x)?;
+            }
+        };
+% endfor
+
+        // done!!!
+        return Ok(result);
+    }
+}

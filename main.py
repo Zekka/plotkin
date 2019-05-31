@@ -1,16 +1,14 @@
-from ir.records.primitive import Domain, ItemRef
-from ir.records.ontology import Ontology
+from ir.records.primitive import Domain, ItemRef as RecItemRef
+from ir.records.ontology import Ontology as RecordOntology
+from ir.rulebooks.primitive import ItemRef as RuleItemRef
+from ir.rulebooks.ontology import Ontology as RulebookOntology
+from ir.rulebooks.rulebook import Trigger
 
-onto = Ontology()
-kind_object = onto.create_record(ItemRef.checked(Domain.Kind, "object"))
+records = RecordOntology()
+kind_object = records.create_record(RecItemRef.checked(Domain.Kind, "object"))
 kind_object.add_field("name", "&'static str")
 
-kind_person = onto.create_record(ItemRef.checked(Domain.Kind, "person"), kind_object)
-kind_room = onto.create_record(ItemRef.checked(Domain.Kind, "room"), kind_object)
-
-# kind_object.add_initializer("name", '''"test"''')
-# kind_room.add_initializer("name", '''"barf"''')
-
+kind_person = records.create_record(RecItemRef.checked(Domain.Kind, "person"), kind_object)
 kind_person.add_field("gender", "&'static str")
 
 for name, fullname, gender in [
@@ -24,39 +22,23 @@ for name, fullname, gender in [
     ("donald_rumsfeld", '''"Donald Rumsfeld"''', '''"Male"'''),
     ("robert_gates", '''"Robert Gates"''', '''"Male"'''),
 ]:
-    entity = onto.create_record(ItemRef.checked(Domain.Entity, name), kind_person)
+    entity = records.create_record(RecItemRef.checked(Domain.Entity, name), kind_person)
     entity.add_initializer("name", fullname)
     entity.add_initializer("gender", gender)
 
-# pp.pprint(onto.codegen_metadata())
+
+rulebooks = RulebookOntology()
+rulebook_player = rulebooks.create_rulebook(RuleItemRef.checked("player"), "()")
+
+rulebook_player.add_action("Attack(H<world::kinds::person::Type>, H<world::kinds::person::Type>)")
+
+rulebook_player.add(Trigger.Instead, "door", "instead_of_opening")
+rulebook_player.add(Trigger.Before, "door", "before_opening")
+rulebook_player.add(Trigger.Perform, "door", "perform_opening")
+rulebook_player.add(Trigger.After, "door", "after_opening")
 
 from codegen import entrypoint
 from fs.filesystem import View
 
 v = View("sampleproject/src")
-v.update(lambda *args: entrypoint.main(*args, onto))
-
-"""
-from fs.j2customization import environment
-from fs.scraps import Scraps
-
-scraps = Scraps()
-with scraps.move_to("test.rs"):
-    scraps.add("test", "test block content")
-
-env = environment(scraps)
-with scraps.move_to("test.rs"):
-    print(env.get_template("test.rs.j2").render())
-"""
-
-"""
-def new_code(env):
-    return {
-        "test1.rs": "test code",
-        "test2.rs": "test code 2",
-    }
-
-from fs.filesystem import View
-v = View("sampleproject")
-v.update(new_code)
-"""
+v.update(lambda a1, a2: entrypoint.main(a1, a2, records, rulebooks))

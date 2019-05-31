@@ -6,7 +6,7 @@ from fs.scraps import Scraps
 pp = pprint.PrettyPrinter(indent=2)
 
 
-def main(scraps: Scraps, env: jinja2.Environment, ontology):
+def main(scraps: Scraps, env: jinja2.Environment, records, rulebooks):
     files = {}
 
     def join(*args):
@@ -17,18 +17,20 @@ def main(scraps: Scraps, env: jinja2.Environment, ontology):
         with scraps.move_to(path2):
             files[join(*path)] = impl()
 
-    cg_meta, assignable = ontology.codegen_metadata()
-    pp.pprint(cg_meta)
-    pp.pprint(assignable)
+    cg_records, cg_records_assignable = records.codegen_metadata()
+    pp.pprint(cg_records)
+    pp.pprint(cg_records_assignable)
+
+
 
     print()
     print()
-    for item_ref, rec in cg_meta.items():
+    for item_ref, rec in cg_records.items():
         base_path = rec["module_name"].split("::")
 
         kw = {
             "this": rec,
-            "super": cg_meta[rec["super_ref"]] if rec["super_ref"] else None,
+            "super": cg_records[rec["super_ref"]] if rec["super_ref"] else None,
         }
 
         add_file(
@@ -42,16 +44,16 @@ def main(scraps: Scraps, env: jinja2.Environment, ontology):
             impl=lambda: env.get_template("record/common.rs.j2").render(**kw)
         )
 
-    entities = {k: v for k, v in cg_meta.items() if k.domain == Domain.Entity}
-    kinds = {k: v for k, v in cg_meta.items() if k.domain == Domain.Kind}
+    entities = {k: v for k, v in cg_records.items() if k.domain == Domain.Entity}
+    kinds = {k: v for k, v in cg_records.items() if k.domain == Domain.Kind}
 
     assignable_entities = {
         kind: {
             name: "."
             + metadata["super_ref"].element
-            + assignable.get((metadata["super_ref"], kind))
+            + cg_records_assignable.get((metadata["super_ref"], kind))
             for name, metadata in entities.items()
-            if (metadata["super_ref"], kind) in assignable
+            if (metadata["super_ref"], kind) in cg_records_assignable
         }
         for kind in kinds.keys()
     }
@@ -59,7 +61,7 @@ def main(scraps: Scraps, env: jinja2.Environment, ontology):
     directory_kw = dict(
         entities=entities,
         kinds=kinds,
-        assignable=assignable,
+        assignable=cg_records_assignable,
         assignable_entities=assignable_entities,
     )
 
@@ -87,6 +89,46 @@ def main(scraps: Scraps, env: jinja2.Environment, ontology):
         "world",
         "directory.rs",
         impl=lambda: env.get_template("directory.rs.j2").render(**directory_kw),
+    )
+
+    cg_rulebooks = rulebooks.codegen_metadata()
+    pp.pprint(cg_rulebooks)
+    for item_ref, cg_rulebook in cg_rulebooks.items():
+        base_path = ["world", "rulebooks", item_ref.element]
+        add_file(
+            *base_path,
+            "handler.rs",
+            impl=lambda: env.get_template("rulebook/handler.rs.j2").render(rulebook=cg_rulebook),
+        )
+        add_file(
+            *base_path,
+            "types.rs",
+            impl=lambda: env.get_template("rulebook/types.rs.j2").render(rulebook=cg_rulebook),
+        )
+        add_file(
+            *base_path,
+            "mod.rs",
+            impl=lambda: env.get_template("rulebook/mod.rs.j2").render(rulebook=cg_rulebook),
+        )
+        add_file(
+            *base_path,
+            "chapters",
+            "mod.rs",
+            impl=lambda: env.get_template("rulebook/mod_chapters.rs.j2").render(rulebook=cg_rulebook),
+        )
+
+        for chapter_name, chapter in cg_rulebook["chapters"].items():
+            chapter_path = base_path + ["chapters", chapter_name + ".rs"]
+            add_file(
+                *chapter_path,
+                impl=lambda: env.get_template("rulebook/chapter/chapter.rs.j2").render(chapter=chapter),
+            )
+
+    add_file(
+        "world",
+        "rulebooks",
+        "mod.rs",
+        impl=lambda: env.get_template("mod_rulebooks.rs.j2").render(rulebooks=cg_rulebooks)
     )
 
     return files

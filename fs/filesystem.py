@@ -38,7 +38,10 @@ class View(object):
         except FileNotFoundError as fnfe:
             pass
         while dirname:
-            if os.listdir(self.rel(dirname)) != []:
+            try:
+                if os.listdir(self.rel(dirname)) != []:
+                    break
+            except FileNotFoundError as fnfe:
                 break
             os.rmdir(self.rel(dirname))
             dirname = os.path.dirname(dirname)
@@ -56,7 +59,6 @@ class View(object):
 
     def add_to_scraps(self, scraps, fname):
         try:
-            print("want to open {0}".format(self.rel(fname)))
             with open(self.rel(fname), "rt") as fexisting:
                 content = fexisting.read()
                 for scrapname, data in extract_scraps(content):
@@ -66,7 +68,6 @@ class View(object):
             print(fnfe)
 
         try:
-            print("want to open {0}.scraps".format(self.rel(fname)))
             with open(self.rel(fname + ".scraps"), "rt") as fexisting:
                 content = fexisting.read()
                 for scrapname, data in extract_scraps(content):
@@ -80,7 +81,6 @@ class View(object):
         scraps = Scraps(self)
 
         for fname in self.list_generated_code():
-            print("browsing: %s" % fname)
             with scraps.move_to(fname):
                 pass
 

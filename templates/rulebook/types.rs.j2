@@ -1,0 +1,15 @@
+use crate::world as world;
+use world::directory::H as H;
+
+pub enum Action {
+% for action in rulebook.actions
+    {{ action }},
+% endfor
+}
+pub type Cancellation = &'static str;
+pub type Outcome = {{ rulebook.outcome }};
+
+pub enum Instead { Next(), Stop(Outcome), Do(Action) }
+pub enum Before { Next(), Do(Action) }
+pub enum Perform { Next(), Completed(Outcome), Cancel(Cancellation) }
+pub enum After { Next(), Do(Action) }
