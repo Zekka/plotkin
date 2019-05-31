@@ -34,10 +34,11 @@ effectively global.
 Things I did:
 
 - things (renamed to "entities") and kinds 
+- actions
 
 Things I didn't do yet:
 
-- actions
+- *meaningful* examples
 - relations
 - string-generating procedures
 - literally any parsing
