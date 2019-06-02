@@ -11,7 +11,9 @@ records = RecordOntology()
 kind_object = records.create_record(RecItemRef.checked(Domain.Kind, "object"))
 kind_object.add_field("name", "&'static str")
 
-kind_person = records.create_record(RecItemRef.checked(Domain.Kind, "person"), kind_object)
+kind_person = records.create_record(
+    RecItemRef.checked(Domain.Kind, "person"), kind_object
+)
 kind_person.add_field("gender", "&'static str")
 
 for name, fullname, gender in [
@@ -33,7 +35,9 @@ for name, fullname, gender in [
 rulebooks = RulebookOntology()
 rulebook_player = rulebooks.create_rulebook(RuleItemRef.checked("player"), "()")
 
-rulebook_player.add_action("Attack(H<world::kinds::person::Type>, H<world::kinds::person::Type>)")
+rulebook_player.add_action(
+    "Attack(H<world::kinds::person::Type>, H<world::kinds::person::Type>)"
+)
 
 rulebook_player.add(Trigger.Instead, "door", "instead_of_opening")
 rulebook_player.add(Trigger.Before, "door", "before_opening")
@@ -45,21 +49,27 @@ relations = RelationOntology()
 for name, lhs, lhs_card, rhs, rhs_card in [
     ("inside_of", "outer", Cardinality.ManyZero, "inner", Cardinality.OneZero),
     ("outside_of", "inner", Cardinality.OneZero, "outer", Cardinality.ManyZero),
-    ("has_attacked", "attacker", Cardinality.ManyZero, "defender", Cardinality.ManyZero),
+    (
+        "has_attacked",
+        "attacker",
+        Cardinality.ManyZero,
+        "defender",
+        Cardinality.ManyZero,
+    ),
     ("supplies_to", "seller", Cardinality.OneZero, "customer", Cardinality.OneZero),
 ]:
     relations.create_relation(
         RelationItemRef(name),
         Side(lhs, "usize", lhs_card),
         Side(rhs, "isize", rhs_card),
-        False
+        False,
     )
 
 relations.create_relation(
     RelationItemRef("married"),
     Side("spouse", "usize", Cardinality.OneZero),
     Side("spouse", "usize", Cardinality.OneZero),
-    True
+    True,
 )
 
 from codegen import entrypoint

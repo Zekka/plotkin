@@ -6,7 +6,7 @@ from typing import NamedTuple
 class Cardinality(Enum):
     # ZEKKA NOTE: "One" is not supported yet, hence not available yet
     # One = "one" # has no "remove" api
-    OneZero = "one?" # has a "remove" api
+    OneZero = "one?"  # has a "remove" api
     ManyZero = "many?"
     # there's no plain many because having a "remove" api, as many would require, implicitly creates nullability
 
@@ -31,17 +31,25 @@ class Relation(object):
             raise ValueError("left and right hand side must be the same type")
 
         # ZEKKA NOTE: One continues to be disabled
-        if False: # Cardinality.One in [self.lhs.cardinality, self.rhs.cardinality]:
+        if False:  # Cardinality.One in [self.lhs.cardinality, self.rhs.cardinality]:
             # avoid things that can implicitly remove
             if self.symmetrical:
-                raise ValueError("if the relation is symmetrical, then neither side may be `one`")
+                raise ValueError(
+                    "if the relation is symmetrical, then neither side may be `one`"
+                )
 
             if self.rhs.cardinality != Cardinality.ManyZero:
-                raise ValueError("if one side is `one`, the other side must be `manyzero`")
+                raise ValueError(
+                    "if one side is `one`, the other side must be `manyzero`"
+                )
             # TODO: Don't generate edit operations for the other side, only permit the other side to be ManyZero
 
     def codegen_metadata(self):
-        side = lambda x: {"name": x.name, "type": x.type, "cardinality": x.cardinality.value}
+        side = lambda x: {
+            "name": x.name,
+            "type": x.type,
+            "cardinality": x.cardinality.value,
+        }
         lhs, rhs = side(self.lhs), side(self.rhs)
         return {
             "module_name": "world::relations::" + self.ref.element,
@@ -50,8 +58,7 @@ class Relation(object):
             "rhs": rhs,
             "symmetrical": self.symmetrical,
             "sides": [lhs, rhs],
-            "opposing_sides":
-                [(lhs, rhs)]
-                if self.symmetrical else
-                [(lhs, rhs), (rhs, lhs)]
+            "opposing_sides": [(lhs, rhs)]
+            if self.symmetrical
+            else [(lhs, rhs), (rhs, lhs)],
         }

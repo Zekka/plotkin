@@ -21,8 +21,6 @@ def main(scraps: Scraps, env: jinja2.Environment, records, rulebooks, relations)
     pp.pprint(cg_records)
     pp.pprint(cg_records_assignable)
 
-
-
     print()
     print()
     for item_ref, rec in cg_records.items():
@@ -36,12 +34,12 @@ def main(scraps: Scraps, env: jinja2.Environment, records, rulebooks, relations)
         add_file(
             *base_path,
             "mod.rs",
-            impl=lambda: env.get_template("record/mod.rs.j2").render(**kw)
+            impl=lambda: env.get_template("record/mod.rs.j2").render(**kw),
         )
         add_file(
             *base_path,
             "common.rs",
-            impl=lambda: env.get_template("record/common.rs.j2").render(**kw)
+            impl=lambda: env.get_template("record/common.rs.j2").render(**kw),
         )
 
     cg_entities = {k: v for k, v in cg_records.items() if k.domain == Domain.Entity}
@@ -65,37 +63,49 @@ def main(scraps: Scraps, env: jinja2.Environment, records, rulebooks, relations)
         add_file(
             *base_path,
             "handler.rs",
-            impl=lambda: env.get_template("rulebook/handler.rs.j2").render(rulebook=cg_rulebook),
+            impl=lambda: env.get_template("rulebook/handler.rs.j2").render(
+                rulebook=cg_rulebook
+            ),
         )
         add_file(
             *base_path,
             "types.rs",
-            impl=lambda: env.get_template("rulebook/types.rs.j2").render(rulebook=cg_rulebook),
+            impl=lambda: env.get_template("rulebook/types.rs.j2").render(
+                rulebook=cg_rulebook
+            ),
         )
         add_file(
             *base_path,
             "mod.rs",
-            impl=lambda: env.get_template("rulebook/mod.rs.j2").render(rulebook=cg_rulebook),
+            impl=lambda: env.get_template("rulebook/mod.rs.j2").render(
+                rulebook=cg_rulebook
+            ),
         )
         add_file(
             *base_path,
             "chapters",
             "mod.rs",
-            impl=lambda: env.get_template("rulebook/mod_chapters.rs.j2").render(rulebook=cg_rulebook),
+            impl=lambda: env.get_template("rulebook/mod_chapters.rs.j2").render(
+                rulebook=cg_rulebook
+            ),
         )
 
         for chapter_name, chapter in cg_rulebook["chapters"].items():
             chapter_path = base_path + ["chapters", chapter_name + ".rs"]
             add_file(
                 *chapter_path,
-                impl=lambda: env.get_template("rulebook/chapter/chapter.rs.j2").render(chapter=chapter),
+                impl=lambda: env.get_template("rulebook/chapter/chapter.rs.j2").render(
+                    chapter=chapter
+                ),
             )
 
     add_file(
         "world",
         "rulebooks",
         "mod.rs",
-        impl=lambda: env.get_template("mod_rulebooks.rs.j2").render(rulebooks=cg_rulebooks)
+        impl=lambda: env.get_template("mod_rulebooks.rs.j2").render(
+            rulebooks=cg_rulebooks
+        ),
     )
 
     cg_relations = relations.codegen_metadata()
@@ -106,19 +116,25 @@ def main(scraps: Scraps, env: jinja2.Environment, records, rulebooks, relations)
         add_file(
             *base_path,
             "common.rs",
-            impl=lambda: env.get_template("relation/common.rs.j2").render(relation=cg_relation),
+            impl=lambda: env.get_template("relation/common.rs.j2").render(
+                relation=cg_relation
+            ),
         )
         add_file(
             *base_path,
             "mod.rs",
-            impl=lambda: env.get_template("relation/mod.rs.j2").render(relation=cg_relation),
+            impl=lambda: env.get_template("relation/mod.rs.j2").render(
+                relation=cg_relation
+            ),
         )
 
     add_file(
         "world",
         "relations",
         "mod.rs",
-        impl=lambda: env.get_template("mod_relations.rs.j2").render(relations=cg_relations)
+        impl=lambda: env.get_template("mod_relations.rs.j2").render(
+            relations=cg_relations
+        ),
     )
 
     directory_kw = dict(

@@ -18,4 +18,6 @@ class Ontology(object):
         return self.rulebooks[item_ref]
 
     def codegen_metadata(self):
-        return {ref: rulebook.codegen_metadata() for ref, rulebook in self.rulebooks.items()}
+        return {
+            ref: rulebook.codegen_metadata() for ref, rulebook in self.rulebooks.items()
+        }
