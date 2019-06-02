@@ -8,4 +8,3 @@ class ItemRef(NamedTuple):
     def checked(cls, element: str):
         assert isinstance(element, str)
         return ItemRef(element)
-

@@ -6,7 +6,7 @@ from fs.scraps import Scraps
 pp = pprint.PrettyPrinter(indent=2)
 
 
-def main(scraps: Scraps, env: jinja2.Environment, records, rulebooks):
+def main(scraps: Scraps, env: jinja2.Environment, records, rulebooks, relations):
     files = {}
 
     def join(*args):
@@ -44,52 +44,19 @@ def main(scraps: Scraps, env: jinja2.Environment, records, rulebooks):
             impl=lambda: env.get_template("record/common.rs.j2").render(**kw)
         )
 
-    entities = {k: v for k, v in cg_records.items() if k.domain == Domain.Entity}
-    kinds = {k: v for k, v in cg_records.items() if k.domain == Domain.Kind}
+    cg_entities = {k: v for k, v in cg_records.items() if k.domain == Domain.Entity}
+    cg_kinds = {k: v for k, v in cg_records.items() if k.domain == Domain.Kind}
 
-    assignable_entities = {
+    cg_assignable_entities = {
         kind: {
             name: "."
             + metadata["super_ref"].element
             + cg_records_assignable.get((metadata["super_ref"], kind))
-            for name, metadata in entities.items()
+            for name, metadata in cg_entities.items()
             if (metadata["super_ref"], kind) in cg_records_assignable
         }
-        for kind in kinds.keys()
+        for kind in cg_kinds.keys()
     }
-
-    directory_kw = dict(
-        entities=entities,
-        kinds=kinds,
-        assignable=cg_records_assignable,
-        assignable_entities=assignable_entities,
-    )
-
-    add_file(
-        "world",
-        "entities",
-        "mod.rs",
-        impl=lambda: env.get_template("mod_entities.rs.j2").render(**directory_kw),
-    )
-
-    add_file(
-        "world",
-        "kinds",
-        "mod.rs",
-        impl=lambda: env.get_template("mod_kinds.rs.j2").render(**directory_kw),
-    )
-
-    add_file(
-        "world",
-        "mod.rs",
-        impl=lambda: env.get_template("mod_world.rs.j2").render(**directory_kw),
-    )
-
-    add_file(
-        "world",
-        "directory.rs",
-        impl=lambda: env.get_template("directory.rs.j2").render(**directory_kw),
-    )
 
     cg_rulebooks = rulebooks.codegen_metadata()
     pp.pprint(cg_rulebooks)
@@ -129,6 +96,63 @@ def main(scraps: Scraps, env: jinja2.Environment, records, rulebooks):
         "rulebooks",
         "mod.rs",
         impl=lambda: env.get_template("mod_rulebooks.rs.j2").render(rulebooks=cg_rulebooks)
+    )
+
+    cg_relations = relations.codegen_metadata()
+    pp.pprint(cg_relations)
+
+    for item_ref, cg_relation in cg_relations.items():
+        base_path = ["world", "relations", item_ref.element]
+        add_file(
+            *base_path,
+            "common.rs",
+            impl=lambda: env.get_template("relation/common.rs.j2").render(relation=cg_relation),
+        )
+        add_file(
+            *base_path,
+            "mod.rs",
+            impl=lambda: env.get_template("relation/mod.rs.j2").render(relation=cg_relation),
+        )
+
+    add_file(
+        "world",
+        "relations",
+        "mod.rs",
+        impl=lambda: env.get_template("mod_relations.rs.j2").render(relations=cg_relations)
+    )
+
+    directory_kw = dict(
+        entities=cg_entities,
+        kinds=cg_kinds,
+        assignable=cg_records_assignable,
+        assignable_entities=cg_assignable_entities,
+        relations=cg_relations,
+    )
+
+    add_file(
+        "world",
+        "entities",
+        "mod.rs",
+        impl=lambda: env.get_template("mod_entities.rs.j2").render(**directory_kw),
+    )
+
+    add_file(
+        "world",
+        "kinds",
+        "mod.rs",
+        impl=lambda: env.get_template("mod_kinds.rs.j2").render(**directory_kw),
+    )
+
+    add_file(
+        "world",
+        "mod.rs",
+        impl=lambda: env.get_template("mod_world.rs.j2").render(**directory_kw),
+    )
+
+    add_file(
+        "world",
+        "directory.rs",
+        impl=lambda: env.get_template("directory.rs.j2").render(**directory_kw),
     )
 
     return files

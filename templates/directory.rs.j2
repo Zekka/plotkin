@@ -2,6 +2,9 @@ use crate::world as world;
 use std::marker::PhantomData;
 
 pub struct Type {
+% for ref, metadata in relations.items()
+    pub {{ ref.element }}: {{ metadata.module_name }}::Type,
+% endfor
 % for ref, metadata in entities.items()
     pub {{ ref.element }}: {{ metadata.module_name }}::Type,
 % endfor
@@ -10,6 +13,9 @@ pub struct Type {
 impl Type {
     pub fn init() -> Type {
         Type {
+% for ref, metadata in relations.items()
+            {{ ref.element }}: {{ metadata.module_name }}::Type::init(),
+% endfor
 % for ref, metadata in entities.items()
             {{ ref.element }}: {{ metadata.module_name }}::Type::init(),
 % endfor

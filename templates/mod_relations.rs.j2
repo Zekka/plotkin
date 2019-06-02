@@ -1,0 +1,6 @@
+use std::collections::HashMap;
+use std::collections::HashSet;
+
+% for ref in relations
+pub mod {{ ref.element }};
+% endfor

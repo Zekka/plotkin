@@ -1,0 +1,128 @@
+use std::collections::HashMap;
+use std::collections::HashSet;
+
+% macro body_every(side, other)
+    % if side.cardinality in ["one", "one?"]
+        self.{{ other.name }}_to_{{ side.name }}.get({{ other.name }}).into_iter()
+    % else
+        match self.{{ other.name }}_to_{{ side.name }}.get({{ other.name }}) {
+            Some(every_{{ side.name }}) => { every_{{ side.name }}.iter() }
+            None => { self.empty_{{ side.name }}.iter() }
+        }
+    % endif
+% endmacro
+
+pub struct Type {
+% for side, other in relation.opposing_sides
+% if side.cardinality in ["one", "one?"]
+    {{ other.name }}_to_{{ side.name }}: HashMap<{{ other.type }}, {{ side.type }}>,
+% else
+    empty_{{ side.name }}: HashSet<{{ side.type }}>,
+    {{ other.name }}_to_{{ side.name }}: HashMap<{{ other.type }}, HashSet<{{ side.type }}>>,
+% endif
+% endfor
+}
+
+impl Type {
+    pub fn init() -> Type {
+        let mut me = Type {
+% for side, other in relation.opposing_sides
+% if side.cardinality in ["one", "one?"]
+% else
+            empty_{{ side.name }}: HashSet::new(),
+% endif
+            {{ other.name }}_to_{{ side.name }}: HashMap::new(),
+% endfor
+        };
+        return me;
+    }
+
+    pub fn add(&mut self, l: &{{ relation.lhs.type }}, r: &{{ relation.rhs.type }}) {
+        self._add_{{ relation.lhs.name }}_assoc(l, r);
+        self._add_{{ relation.rhs.name }}_assoc(r, l);
+    }
+
+    pub fn remove(&mut self, l: &{{ relation.lhs.type }}, r: &{{ relation.rhs.type }}) {
+        self._remove_{{ relation.lhs.name }}_assoc(l, r);
+        self._remove_{{ relation.rhs.name }}_assoc(r, l);
+    }
+
+    pub fn has(&self, l: &{{ relation.lhs.type }}, r: &{{ relation.rhs.type }}) -> bool {
+        let every_{{ relation.rhs.name }} = self.{{ relation.lhs.name }}_to_{{ relation.rhs.name }}.get(l);
+    % if relation.rhs.cardinality in ["one", "one?"]
+        return every_{{ relation.rhs.name }} == Some(r);
+    % else
+        return every_{{ relation.rhs.name }}.map_or(false, |rs| rs.contains(r));
+    % endif
+    }
+
+% if relation.lhs.type == relation.rhs.type
+    pub fn remove_all_references(&mut self, it: &{{ relation.lhs.type }}) {
+    % for side, _ in relation.opposing_sides
+        self._remove_all_references_to_{{ side.name }}(it);
+    % endfor
+    }
+% endif
+
+% for side, _ in relation.opposing_sides
+    pub fn remove_{{ side.name }}(&mut self, {{ side.name }}: &{{ side.type }}) {
+        self._remove_all_references_to_{{ side.name }}({{ side.name }});
+    }
+% endfor
+
+% for side, other in relation.opposing_sides
+    pub fn every_{{ side.name }}(&self, {{ other.name }}: &{{ other.type }}) -> impl Iterator<Item=&{{ side.type }}> {
+{{ body_every(side, other) }}    }
+
+    fn _remove_all_references_to_{{ side.name }}(&mut self, {{ side.name }}: &{{ side.type }}) {
+        let iter =
+{{ body_every(other, side) }}        ;
+    % if relation.symmetrical
+        let values: Vec<{{ other.type }}> = iter.cloned().collect();
+        for {{ other.name }}_v in values {
+            let {{ other.name }} = &{{ other.name }}_v;
+    % else
+        for {{ other.name }} in iter {
+    % endif
+    % if side.cardinality in ["one", "one?"]
+            self.{{ other.name }}_to_{{ side.name }}.remove({{ other.name }});
+    % else
+            match self.{{ other.name }}_to_{{ side.name }}.get_mut({{ other.name }}) {
+                Some(every_{{ side.name }}) => { every_{{ side.name }}.remove({{ side.name }}); }
+                None => {}
+            }
+    % endif
+        };
+        self.{{ side.name }}_to_{{ other.name }}.remove({{ side.name }});
+    }
+
+    fn _add_{{ side.name }}_assoc(&mut self, me: &{{ side.type }}, other: &{{ other.type }}) {
+    % if other.cardinality in ["one", "one?"]
+        self._remove_all_references_to_{{ side.name }}(me);
+        self.{{ side.name }}_to_{{ other.name }}.insert(me.clone(), other.clone());
+    % else
+        let existing = self.{{ side.name }}_to_{{ other.name }}.entry(me.clone()).or_insert_with(|| HashSet::new());
+        if existing.contains(other) { return; }
+        existing.insert(other.clone());
+    % endif
+    }
+
+    fn _remove_{{ side.name }}_assoc(&mut self, me: &{{ side.type }}, other: &{{ other.type }}) {
+    % if other.cardinality in ["one", "one?"]
+        match self.{{ side.name }}_to_{{ other.name }}.get(me) {
+            Some(other2) if other2 == other => {
+                self.{{ side.name }}_to_{{ other.name }}.remove(me);
+            }
+            _ => {}
+        }
+    % else
+        match self.{{ side.name }}_to_{{ other.name }}.get_mut(me) {
+            Some(every_{{ other.name }}) => {
+                every_{{ other.name }}.remove(other);
+            }
+            _ => {}
+        };
+    % endif
+    }
+% endfor
+}

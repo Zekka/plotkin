@@ -1,5 +1,8 @@
 from ir.records.primitive import Domain, ItemRef as RecItemRef
 from ir.records.ontology import Ontology as RecordOntology
+from ir.relations.primitive import ItemRef as RelationItemRef
+from ir.relations.ontology import Ontology as RelationOntology
+from ir.relations.relation import Side, Cardinality
 from ir.rulebooks.primitive import ItemRef as RuleItemRef
 from ir.rulebooks.ontology import Ontology as RulebookOntology
 from ir.rulebooks.rulebook import Trigger
@@ -37,8 +40,30 @@ rulebook_player.add(Trigger.Before, "door", "before_opening")
 rulebook_player.add(Trigger.Perform, "door", "perform_opening")
 rulebook_player.add(Trigger.After, "door", "after_opening")
 
+
+relations = RelationOntology()
+for name, lhs, lhs_card, rhs, rhs_card in [
+    ("inside_of", "outer", Cardinality.ManyZero, "inner", Cardinality.OneZero),
+    ("outside_of", "inner", Cardinality.OneZero, "outer", Cardinality.ManyZero),
+    ("has_attacked", "attacker", Cardinality.ManyZero, "defender", Cardinality.ManyZero),
+    ("supplies_to", "seller", Cardinality.OneZero, "customer", Cardinality.OneZero),
+]:
+    relations.create_relation(
+        RelationItemRef(name),
+        Side(lhs, "usize", lhs_card),
+        Side(rhs, "isize", rhs_card),
+        False
+    )
+
+relations.create_relation(
+    RelationItemRef("married"),
+    Side("spouse", "usize", Cardinality.OneZero),
+    Side("spouse", "usize", Cardinality.OneZero),
+    True
+)
+
 from codegen import entrypoint
 from fs.filesystem import View
 
 v = View("sampleproject/src")
-v.update(lambda a1, a2: entrypoint.main(a1, a2, records, rulebooks))
+v.update(lambda a1, a2: entrypoint.main(a1, a2, records, rulebooks, relations))
