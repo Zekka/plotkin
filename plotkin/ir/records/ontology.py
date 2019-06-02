@@ -1,5 +1,5 @@
-from ir.records.primitive import ItemRef, Domain
-from ir.records.record import Record
+from plotkin.ir.records.primitive import ItemRef, Domain
+from plotkin.ir.records.record import Record
 from typing import Dict, Optional
 
 

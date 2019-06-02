@@ -1,7 +1,7 @@
 import pprint
 import jinja2
-from ir.records.primitive import Domain
-from fs.scraps import Scraps
+from plotkin.ir.records.primitive import Domain
+from plotkin.fs.scraps import Scraps
 
 pp = pprint.PrettyPrinter(indent=2)
 

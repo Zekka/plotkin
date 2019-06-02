@@ -1,11 +1,11 @@
-from ir.records.primitive import Domain, ItemRef as RecItemRef
-from ir.records.ontology import Ontology as RecordOntology
-from ir.relations.primitive import ItemRef as RelationItemRef
-from ir.relations.ontology import Ontology as RelationOntology
-from ir.relations.relation import Side, Cardinality
-from ir.rulebooks.primitive import ItemRef as RuleItemRef
-from ir.rulebooks.ontology import Ontology as RulebookOntology
-from ir.rulebooks.rulebook import Trigger
+from plotkin.ir.records.primitive import Domain, ItemRef as RecItemRef
+from plotkin.ir.records.ontology import Ontology as RecordOntology
+from plotkin.ir.relations.primitive import ItemRef as RelationItemRef
+from plotkin.ir.relations.ontology import Ontology as RelationOntology
+from plotkin.ir.relations.relation import Side, Cardinality
+from plotkin.ir.rulebooks.primitive import ItemRef as RuleItemRef
+from plotkin.ir.rulebooks.ontology import Ontology as RulebookOntology
+from plotkin.ir.rulebooks.rulebook import Trigger
 
 records = RecordOntology()
 kind_object = records.create_record(RecItemRef.checked(Domain.Kind, "object"))
@@ -97,8 +97,8 @@ for i, ent in enumerate(entities_cabinet):
         ent.ref, entity_broccoli.ref if i in [2, 3, 6] else entity_pizza.ref
     )
 
-from codegen import entrypoint
-from fs.filesystem import View
+from plotkin.codegen import entrypoint
+from plotkin.fs.filesystem import View
 
 v = View("sampleproject/src")
 v.update(lambda a1, a2: entrypoint.main(a1, a2, records, rulebooks, relations))

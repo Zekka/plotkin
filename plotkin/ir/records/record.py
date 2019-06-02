@@ -1,6 +1,6 @@
 from errors import CompilerError
 from typing import Dict, Optional
-from ir.records.primitive import Domain, ItemRef, Field
+from plotkin.ir.records.primitive import Domain, ItemRef, Field
 
 Literal = str
 

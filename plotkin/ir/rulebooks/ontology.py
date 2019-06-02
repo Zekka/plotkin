@@ -1,6 +1,6 @@
-from ir.rulebooks.primitive import ItemRef
-from ir.rulebooks.rulebook import Rulebook
-from typing import Dict, Optional
+from plotkin.ir.rulebooks.primitive import ItemRef
+from plotkin.ir.rulebooks.rulebook import Rulebook
+from typing import Dict
 
 
 class Ontology(object):
