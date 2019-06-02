@@ -35,11 +35,12 @@ Things I did:
 
 - things (renamed to "entities") and kinds 
 - actions
+- relations (minus equivalence classes)
 
 Things I didn't do yet:
 
+- initializers for relations
 - *meaningful* examples
-- relations
 - string-generating procedures
 - literally any parsing
 
