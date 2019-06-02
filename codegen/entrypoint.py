@@ -108,7 +108,9 @@ def main(scraps: Scraps, env: jinja2.Environment, records, rulebooks, relations)
         ),
     )
 
-    cg_relations = relations.codegen_metadata()
+    cg_relations = relations.codegen_metadata(
+        cg_records, cg_records_assignable, cg_assignable_entities
+    )
     pp.pprint(cg_relations)
 
     for item_ref, cg_relation in cg_relations.items():

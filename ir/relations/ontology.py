@@ -18,7 +18,12 @@ class Ontology(object):
     def get_relation(self, item_ref: ItemRef):
         return self.relations[item_ref]
 
-    def codegen_metadata(self):
+    def codegen_metadata(
+        self, cg_records, cg_records_assignable, cg_assignable_entities
+    ):
         return {
-            ref: relation.codegen_metadata() for ref, relation in self.relations.items()
+            ref: relation.codegen_metadata(
+                cg_records, cg_records_assignable, cg_assignable_entities
+            )
+            for ref, relation in self.relations.items()
         }

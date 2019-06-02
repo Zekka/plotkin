@@ -16,6 +16,9 @@ kind_person = records.create_record(
 )
 kind_person.add_field("gender", "&'static str")
 
+kind_food = records.create_record(RecItemRef.checked(Domain.Kind, "food"), kind_object)
+
+entities_cabinet = []
 for name, fullname, gender in [
     ("george_bush", '''"George W. Bush"''', '''"Male"'''),
     ("dick_cheney", '''"Dick Cheney"''', '''"Male"'''),
@@ -30,6 +33,16 @@ for name, fullname, gender in [
     entity = records.create_record(RecItemRef.checked(Domain.Entity, name), kind_person)
     entity.add_initializer("name", fullname)
     entity.add_initializer("gender", gender)
+    entities_cabinet.append(entity)
+
+entity_pizza = records.create_record(
+    RecItemRef.checked(Domain.Entity, "pizza"), kind_food
+)
+entity_broccoli = records.create_record(
+    RecItemRef.checked(Domain.Entity, "broccoli"), kind_food
+)
+entity_pizza.add_initializer("name", '''"pizza"''')
+entity_broccoli.add_initializer("name", '''"broccoli"''')
 
 
 rulebooks = RulebookOntology()
@@ -60,17 +73,29 @@ for name, lhs, lhs_card, rhs, rhs_card in [
 ]:
     relations.create_relation(
         RelationItemRef(name),
-        Side(lhs, "usize", lhs_card),
-        Side(rhs, "isize", rhs_card),
+        Side(lhs, "usize", lhs_card, None),
+        Side(rhs, "isize", rhs_card, None),
         False,
     )
 
 relations.create_relation(
     RelationItemRef("married"),
-    Side("spouse", "usize", Cardinality.OneZero),
-    Side("spouse", "usize", Cardinality.OneZero),
+    Side("spouse", "usize", Cardinality.OneZero, None),
+    Side("spouse", "usize", Cardinality.OneZero, None),
     True,
 )
+
+favorite_food = relations.create_relation(
+    RelationItemRef("favorite_food"),
+    Side("favorer", "H<world::kinds::person::Type>", Cardinality.One, kind_person.ref),
+    Side("food", "H<world::kinds::food::Type>", Cardinality.ManyZero, kind_food.ref),
+    False,
+)
+
+for i, ent in enumerate(entities_cabinet):
+    favorite_food.add_initializer(
+        ent.ref, entity_broccoli.ref if i in [2, 3, 6] else entity_pizza.ref
+    )
 
 from codegen import entrypoint
 from fs.filesystem import View

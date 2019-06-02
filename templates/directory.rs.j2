@@ -1,4 +1,5 @@
 use crate::world as world;
+use std::hash::{Hash, Hasher};
 use std::marker::PhantomData;
 
 pub struct Type {
@@ -111,12 +112,35 @@ pub const EVERY_{{ kind.element|upper() }}: [H<{{ metadata.module_name }}::Type>
 
 pub struct H<T>(pub PhantomData<*const T>, pub usize);
 
+impl <T> PartialEq for H<T> {
+    fn eq(&self, other: &H<T>) -> bool {
+        self.1 == other.1
+    }
+}
+impl <T> Eq for H<T> {}
+impl <T> Hash for H<T> {
+    fn hash<H: Hasher>(&self, state: &mut H) {
+        self.1.hash(state);
+    }
+}
+
 impl<T> Copy for H<T> {}
 impl<T> Clone for H<T> {
     fn clone(&self) -> H<T> { *self }
 }
 
 pub struct E<T>(pub PhantomData<*const T>);
+
+impl <T> PartialEq for E<T> {
+    fn eq(&self, other: &E<T>) -> bool {
+        true
+    }
+}
+impl <T> Eq for E<T> {}
+impl <T> Hash for E<T> {
+    fn hash<H: Hasher>(&self, state: &mut H) {
+    }
+}
 
 impl<T> Copy for E<T> {}
 impl<T> Clone for E<T> {
