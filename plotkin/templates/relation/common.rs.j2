@@ -5,7 +5,7 @@ use std::collections::HashMap;
 use std::collections::HashSet;
 
 % macro body_every(side, other)
-    % if side.other_oneish
+    % if other.oneish
         self.{{ other.name }}_to_{{ side.name }}.get({{ other.name }}).into_iter()
     % else
         match self.{{ other.name }}_to_{{ side.name }}.get({{ other.name }}) {
@@ -17,7 +17,7 @@ use std::collections::HashSet;
 
 pub struct Type {
 % for side, other in relation.opposing_sides
-% if side.other_oneish
+% if other.oneish
     {{ other.name }}_to_{{ side.name }}: HashMap<{{ other.type }}, {{ side.type }}>,
 % else
     empty_{{ side.name }}: HashSet<{{ side.type }}>,
@@ -30,7 +30,7 @@ impl Type {
     pub fn init() -> Type {
         let mut me = Type {
     % for side, other in relation.opposing_sides
-        % if side.other_manyish
+        % if other.manyish
             empty_{{ side.name }}: HashSet::new(),
         % endif
             {{ other.name }}_to_{{ side.name }}: HashMap::new(),
@@ -47,7 +47,7 @@ impl Type {
         self._add_{{ relation.rhs.name }}_assoc(r, l);
     }
 
-    % if relation.lhs.other_nullable and relation.rhs.other_nullable
+    % if relation.lhs.nullable and relation.rhs.nullable
     pub fn remove(&mut self, l: &{{ relation.lhs.type }}, r: &{{ relation.rhs.type }}) {
         self._remove_{{ relation.lhs.name }}_assoc(l, r);
         self._remove_{{ relation.rhs.name }}_assoc(r, l);
@@ -56,14 +56,14 @@ impl Type {
 
     pub fn has(&self, l: &{{ relation.lhs.type }}, r: &{{ relation.rhs.type }}) -> bool {
         let every_{{ relation.rhs.name }} = self.{{ relation.lhs.name }}_to_{{ relation.rhs.name }}.get(l);
-    % if relation.rhs.other_oneish
+    % if relation.lhs.oneish
         return every_{{ relation.rhs.name }} == Some(r);
     % else
         return every_{{ relation.rhs.name }}.map_or(false, |rs| rs.contains(r));
     % endif
     }
 
-% if relation.lhs.other_nullable and relation.rhs.other_nullable
+% if relation.lhs.nullable and relation.rhs.nullable
 % if relation.lhs.type == relation.rhs.type
     pub fn remove_all_references(&mut self, it: &{{ relation.lhs.type }}) {
     % for side, _ in relation.opposing_sides
@@ -74,7 +74,7 @@ impl Type {
 % endif
 
 % for side, _ in relation.opposing_sides
-% if relation.lhs.other_nullable and relation.rhs.other_nullable
+% if relation.lhs.nullable and relation.rhs.nullable
     pub fn remove_{{ side.name }}(&mut self, {{ side.name }}: &{{ side.type }}) {
         self._remove_all_references_to_{{ side.name }}({{ side.name }});
     }
@@ -86,7 +86,7 @@ impl Type {
 {{ body_every(side, other) }}    }
 
     fn _add_{{ side.name }}_assoc(&mut self, me: &{{ side.type }}, other: &{{ other.type }}) {
-    % if other.other_oneish
+    % if side.oneish
         self._remove_all_references_to_{{ side.name }}(me);
         self.{{ side.name }}_to_{{ other.name }}.insert(me.clone(), other.clone());
     % else
@@ -96,7 +96,7 @@ impl Type {
     % endif
     }
 
-% if side.other_nullable
+% if other.nullable
     fn _remove_all_references_to_{{ side.name }}(&mut self, {{ side.name }}: &{{ side.type }}) {
         let iter =
 {{ body_every(other, side) }}        ;
@@ -107,7 +107,7 @@ impl Type {
     % else
         for {{ other.name }} in iter {
     % endif
-    % if side.other_oneish
+    % if other.oneish
             self.{{ other.name }}_to_{{ side.name }}.remove({{ other.name }});
     % else
             match self.{{ other.name }}_to_{{ side.name }}.get_mut({{ other.name }}) {
@@ -120,9 +120,9 @@ impl Type {
     }
 % endif
 
-% if relation.lhs.other_nullable and relation.rhs.other_nullable
+% if relation.lhs.nullable and relation.rhs.nullable
     fn _remove_{{ side.name }}_assoc(&mut self, me: &{{ side.type }}, other: &{{ other.type }}) {
-    % if other.other_oneish
+    % if side.oneish
         match self.{{ side.name }}_to_{{ other.name }}.get(me) {
             Some(other2) if other2 == other => {
                 self.{{ side.name }}_to_{{ other.name }}.remove(me);

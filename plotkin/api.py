@@ -116,8 +116,8 @@ class _RelateLHS(object):
         return _RelateLHS_RHS(
             self.api,
             RelationItemRef(self.name),
-            Side(self.lhs_name, self.lhs_type, rhs_cardinality, self.lhs_domain),
-            Side(rhs_name, rhs_type, self.lhs_cardinality, rhs_domain),
+            Side(self.lhs_name, self.lhs_type, self.lhs_cardinality, self.lhs_domain),
+            Side(rhs_name, rhs_type, rhs_cardinality, rhs_domain),
             False,
         )
 
