@@ -62,9 +62,12 @@ api.relate("supplies_to").from_one("seller", "usize", None).to_one(
 
 api.relate("married_to").one_symmetric("spouse", "usize", None).create()
 
-favorite_food = api.relate("favorite_food").from_many(
-    "favorer", "H<world::kinds::person::Type>", kind_person.ref
-).to_one("food", "H<world::kinds::food::Type>", kind_food.ref, optional=False).create()
+favorite_food = (
+    api.relate("favorite_food")
+    .from_many("favorer", "H<world::kinds::person::Type>", kind_person.ref)
+    .to_one("food", "H<world::kinds::food::Type>", kind_food.ref, optional=False)
+    .create()
+)
 
 for i, ent in enumerate(entities_cabinet):
     favorite_food.add_initializer(

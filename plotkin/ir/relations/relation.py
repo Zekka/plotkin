@@ -41,7 +41,10 @@ class Relation(object):
         self.rhs = rhs
         self.symmetrical = symmetrical
 
-        if self.symmetrical and self.lhs.other_cardinality != self.rhs.other_cardinality:
+        if (
+            self.symmetrical
+            and self.lhs.other_cardinality != self.rhs.other_cardinality
+        ):
             raise ValueError("left and right hand side must be the same cardinality")
 
         if self.symmetrical and self.lhs.type != self.rhs.type:
@@ -60,17 +63,19 @@ class Relation(object):
                     "if the relation is symmetrical, then neither side may be `one`"
                 )
 
-        if self.lhs.other_cardinality == Cardinality.One and self.rhs.other_cardinality != Cardinality.ManyZero:
+        if (
+            self.lhs.other_cardinality == Cardinality.One
+            and self.rhs.other_cardinality != Cardinality.ManyZero
+        ):
             # because otherwise we would need to remove from the One side to update the other side
-            raise ValueError(
-                "if one side is `one`, the other side must be `manyzero`"
-            )
+            raise ValueError("if one side is `one`, the other side must be `manyzero`")
 
-        if self.rhs.other_cardinality == Cardinality.One and self.lhs.other_cardinality != Cardinality.ManyZero:
+        if (
+            self.rhs.other_cardinality == Cardinality.One
+            and self.lhs.other_cardinality != Cardinality.ManyZero
+        ):
             # because otherwise we would need to remove from the One side to update the other side
-            raise ValueError(
-                "if one side is `one`, the other side must be `manyzero`"
-            )
+            raise ValueError("if one side is `one`, the other side must be `manyzero`")
 
     def add_initializer(self, lhs, rhs):
         assert isinstance(lhs, str) or isinstance(lhs, RecordRef)
