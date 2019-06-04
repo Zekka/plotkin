@@ -43,7 +43,6 @@ rulebook_player.add_before("door", "before_opening")
 rulebook_player.add_perform("door", "perform_opening")
 rulebook_player.add_after("door", "after_opening")
 
-# TODO: Relation cardinality is backwards. Fix that
 api.relate("inside_of").from_many("inner", "usize", None).to_one(
     "outer", "isize", None
 ).create()
