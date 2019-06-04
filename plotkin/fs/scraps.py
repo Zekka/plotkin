@@ -1,5 +1,5 @@
 from contextlib import contextmanager
-from errors import CompilerError
+from plotkin.errors import CompilerError
 
 
 class Scraps(object):

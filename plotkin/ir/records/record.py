@@ -1,4 +1,4 @@
-from errors import CompilerError
+from plotkin.errors import CompilerError
 from typing import Dict, Optional
 from plotkin.ir.records.primitive import Domain, ItemRef, Field
 

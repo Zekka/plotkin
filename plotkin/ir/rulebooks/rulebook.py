@@ -22,6 +22,7 @@ class Rulebook(object):
         self._actions = []
         self.outcome = outcome
 
+    # == PRIMITIVES ==
     def add(self, trigger: Trigger, chapter: str, procedure: str):
         assert isinstance(trigger, Trigger)
         assert isinstance(chapter, str)
@@ -55,3 +56,16 @@ class Rulebook(object):
                 chapter["rules"][trigger].append(rule)
 
         return cg_meta
+
+    # == SHORTHAND ==
+    def add_instead(self, chapter: str, procedure: str):
+        self.add(Trigger.Instead, chapter, procedure)
+
+    def add_before(self, chapter: str, procedure: str):
+        self.add(Trigger.Before, chapter, procedure)
+
+    def add_perform(self, chapter: str, procedure: str):
+        self.add(Trigger.Perform, chapter, procedure)
+
+    def add_after(self, chapter: str, procedure: str):
+        self.add(Trigger.After, chapter, procedure)

@@ -1,22 +1,14 @@
-from plotkin.ir.records.primitive import Domain, ItemRef as RecItemRef
-from plotkin.ir.records.ontology import Ontology as RecordOntology
-from plotkin.ir.relations.primitive import ItemRef as RelationItemRef
-from plotkin.ir.relations.ontology import Ontology as RelationOntology
-from plotkin.ir.relations.relation import Side, Cardinality
-from plotkin.ir.rulebooks.primitive import ItemRef as RuleItemRef
-from plotkin.ir.rulebooks.ontology import Ontology as RulebookOntology
-from plotkin.ir.rulebooks.rulebook import Trigger
+from plotkin import API
 
-records = RecordOntology()
-kind_object = records.create_record(RecItemRef.checked(Domain.Kind, "object"))
+api = API()
+
+kind_object = api.create_kind("object")
 kind_object.add_field("name", "&'static str")
 
-kind_person = records.create_record(
-    RecItemRef.checked(Domain.Kind, "person"), kind_object
-)
+kind_person = api.create_kind("person", kind_object)
 kind_person.add_field("gender", "&'static str")
 
-kind_food = records.create_record(RecItemRef.checked(Domain.Kind, "food"), kind_object)
+kind_food = api.create_kind("food", kind_object)
 
 entities_cabinet = []
 for name, fullname, gender in [
@@ -30,35 +22,58 @@ for name, fullname, gender in [
     ("donald_rumsfeld", '''"Donald Rumsfeld"''', '''"Male"'''),
     ("robert_gates", '''"Robert Gates"''', '''"Male"'''),
 ]:
-    entity = records.create_record(RecItemRef.checked(Domain.Entity, name), kind_person)
+    entity = api.create_entity(name, kind_person)
     entity.add_initializer("name", fullname)
     entity.add_initializer("gender", gender)
     entities_cabinet.append(entity)
 
-entity_pizza = records.create_record(
-    RecItemRef.checked(Domain.Entity, "pizza"), kind_food
-)
-entity_broccoli = records.create_record(
-    RecItemRef.checked(Domain.Entity, "broccoli"), kind_food
-)
+entity_pizza = api.create_entity("pizza", kind_food)
+entity_broccoli = api.create_entity("broccoli", kind_food)
+
 entity_pizza.add_initializer("name", '''"pizza"''')
 entity_broccoli.add_initializer("name", '''"broccoli"''')
 
-
-rulebooks = RulebookOntology()
-rulebook_player = rulebooks.create_rulebook(RuleItemRef.checked("player"), "()")
-
+rulebook_player = api.create_rulebook("player", "()")
 rulebook_player.add_action(
     "Attack(H<world::kinds::person::Type>, H<world::kinds::person::Type>)"
 )
 
-rulebook_player.add(Trigger.Instead, "door", "instead_of_opening")
-rulebook_player.add(Trigger.Before, "door", "before_opening")
-rulebook_player.add(Trigger.Perform, "door", "perform_opening")
-rulebook_player.add(Trigger.After, "door", "after_opening")
+rulebook_player.add_instead("door", "instead_of_opening")
+rulebook_player.add_before("door", "before_opening")
+rulebook_player.add_perform("door", "perform_opening")
+rulebook_player.add_after("door", "after_opening")
 
+# TODO: Relation cardinality is backwards. Fix that
+api.relate("inside_of").from_many("inner", "usize", None).to_one(
+    "outer", "isize", None
+).create()
 
-relations = RelationOntology()
+api.relate("outside_of").from_one("outer", "usize", None).to_many(
+    "inner", "isize", None
+).create()
+
+api.relate("has_attacked").from_many("attacker", "usize", None).to_many(
+    "target", "isize", None
+).create()
+
+api.relate("supplies_to").from_one("seller", "usize", None).to_one(
+    "buyer", "isize", None
+).create()
+
+api.relate("married_to").one_symmetric("spouse", "usize", None).create()
+
+favorite_food = api.relate("favorite_food").from_many(
+    "favorer", "H<world::kinds::person::Type>", kind_person.ref
+).to_one("food", "H<world::kinds::food::Type>", kind_food.ref, optional=False).create()
+
+for i, ent in enumerate(entities_cabinet):
+    favorite_food.add_initializer(
+        ent.ref, entity_broccoli.ref if i in [2, 3, 6] else entity_pizza.ref
+    )
+
+api.update("sampleproject/src")
+
+"""
 for name, lhs, lhs_card, rhs, rhs_card in [
     ("inside_of", "outer", Cardinality.ManyZero, "inner", Cardinality.OneZero),
     ("outside_of", "inner", Cardinality.OneZero, "outer", Cardinality.ManyZero),
@@ -96,9 +111,4 @@ for i, ent in enumerate(entities_cabinet):
     favorite_food.add_initializer(
         ent.ref, entity_broccoli.ref if i in [2, 3, 6] else entity_pizza.ref
     )
-
-from plotkin.codegen import entrypoint
-from plotkin.fs.filesystem import View
-
-v = View("sampleproject/src")
-v.update(lambda a1, a2: entrypoint.main(a1, a2, records, rulebooks, relations))
+"""

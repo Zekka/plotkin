@@ -20,7 +20,7 @@ def oneish(c: Cardinality):
 class Side(NamedTuple):
     name: str
     type: str
-    cardinality: Cardinality
+    other_cardinality: Cardinality
     kind: Optional[RecordRef]
 
 
@@ -41,7 +41,7 @@ class Relation(object):
         self.rhs = rhs
         self.symmetrical = symmetrical
 
-        if self.symmetrical and self.lhs.cardinality != self.rhs.cardinality:
+        if self.symmetrical and self.lhs.other_cardinality != self.rhs.other_cardinality:
             raise ValueError("left and right hand side must be the same cardinality")
 
         if self.symmetrical and self.lhs.type != self.rhs.type:
@@ -49,42 +49,48 @@ class Relation(object):
 
         for side in [self.lhs, self.rhs]:
             has_kind = side.kind is not None
-            is_one = side.cardinality == Cardinality.One
+            is_one = side.other_cardinality == Cardinality.One
             if is_one and not has_kind:
                 raise ValueError("any side with `one` must have a kind")
 
-        if Cardinality.One in [self.lhs.cardinality, self.rhs.cardinality]:
+        if Cardinality.One in [self.lhs.other_cardinality, self.rhs.other_cardinality]:
             # avoid things that can implicitly remove
             if self.symmetrical:
                 raise ValueError(
                     "if the relation is symmetrical, then neither side may be `one`"
                 )
 
-            if self.rhs.cardinality != Cardinality.ManyZero:
-                # because otherwise we would need to remove from the One side to update the other side
-                raise ValueError(
-                    "if one side is `one`, the other side must be `manyzero`"
-                )
+        if self.lhs.other_cardinality == Cardinality.One and self.rhs.other_cardinality != Cardinality.ManyZero:
+            # because otherwise we would need to remove from the One side to update the other side
+            raise ValueError(
+                "if one side is `one`, the other side must be `manyzero`"
+            )
 
-            # TODO: Don't generate remove operations for the other side
+        if self.rhs.other_cardinality == Cardinality.One and self.lhs.other_cardinality != Cardinality.ManyZero:
+            # because otherwise we would need to remove from the One side to update the other side
+            raise ValueError(
+                "if one side is `one`, the other side must be `manyzero`"
+            )
 
     def add_initializer(self, lhs, rhs):
         assert isinstance(lhs, str) or isinstance(lhs, RecordRef)
         assert isinstance(rhs, str) or isinstance(rhs, RecordRef)
 
+        print(self.lhs)
+        print(self.rhs)
         rhs_old = self._initializer_lhs_last.get(lhs)
-        if rhs_old and oneish(self.lhs.cardinality):
+        if rhs_old and oneish(self.lhs.other_cardinality):
             raise ValueError(
-                "can't have duplicate initializers for {} ({} vs {})".format(
-                    self.lhs, rhs_old, rhs
+                "can't have duplicate initializers for {} {} ({} vs {})".format(
+                    self.lhs.name, lhs, rhs_old, rhs
                 )
             )
 
         lhs_old = self._initializer_rhs_last.get(rhs)
-        if lhs_old and oneish(self.rhs.cardinality):
+        if lhs_old and oneish(self.rhs.other_cardinality):
             raise ValueError(
-                "can't have duplicate initializers for {} ({} vs {})".format(
-                    self.rhs, lhs_old, lhs
+                "can't have duplicate initializers for {} {} ({} vs {})".format(
+                    self.rhs.name, rhs, lhs_old, lhs
                 )
             )
 
@@ -106,7 +112,7 @@ class Relation(object):
                 continue
 
             needed = set()
-            if side.cardinality == Cardinality.One:
+            if side.other_cardinality == Cardinality.One:
                 needed.update(cg_assignable_entities[side.kind].keys())
 
             for i in self._initializers:
@@ -122,16 +128,17 @@ class Relation(object):
             for ent in cg_assignable_entities[side.kind]:
                 pprint.pprint(cg_records[ent])
 
-        gen = lambda x: {
+        gen = lambda x, y: {
             "name": x.name,
             "type": x.type,
-            "cardinality": x.cardinality.value,
+            "my_cardinality": y.other_cardinality.value,
+            "other_cardinality": x.other_cardinality.value,
             "kind": x.kind,
-            "nullable": x.cardinality is not Cardinality.One,
-            "oneish": oneish(x.cardinality),
-            "manyish": not oneish(x.cardinality),
+            "other_nullable": x.other_cardinality is not Cardinality.One,
+            "other_oneish": oneish(x.other_cardinality),
+            "other_manyish": not oneish(x.other_cardinality),
         }
-        lhs, rhs = gen(self.lhs), gen(self.rhs)
+        lhs, rhs = gen(self.lhs, self.rhs), gen(self.rhs, self.lhs)
         return {
             "module_name": "world::relations::" + self.ref.element,
             "ref": self.ref,
